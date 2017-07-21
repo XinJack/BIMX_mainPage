@@ -280,8 +280,15 @@ export default {
                 if(this.selectionMode === 'singleSelection'){ // 单选
                     this.selection = data;
                 }else if(this.selectionMode === 'multiSelection'){ // 多选
-                    this.multiSelections.push(data.objectId);
-                    this.viewer.addSelectedComponentsById(this.multiSelections);
+                    var index = _.indexOf(this.multiSelections, data.objectId);
+                    if(index < 0){ // 构件并未选中
+                        this.multiSelections.push(data.objectId);
+                    }else{ // 构件已经选中过
+                        this.multiSelections.splice(index, 1);
+                        this.hideAttributePane(document.getElementsByClassName('bf-panel')[0]);
+                    }
+                    this.viewer.setSelectedComponentsById(this.multiSelections);
+                    this.viewer.render();
                 }
             });
         },
@@ -444,6 +451,7 @@ export default {
         },
         // 清除当前选择集
         clearSelections () {
+            this.multiSelections = [];
             if(this.viewer){
                 this.viewer.setSelectedComponentsById([]);
                 this.viewer.render();
