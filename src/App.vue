@@ -56,10 +56,14 @@
             <el-menu-item index="4-10">清除当前选择集</el-menu-item>
           </el-menu-item-group>
         </el-submenu>
-        <el-menu-item index="5" class="logout">退出登录</el-menu-item>
+        <el-menu-item index="5">查看视频</el-menu-item>
+        <el-menu-item index="6" class="logout">退出登录</el-menu-item>
       </el-menu>
     </div>
     <div id="bimx" ref="bimx"></div>
+    <el-dialog :visible.sync="showVideo" title="现场视频" size="large" :before-close='closeVideo'>
+        <video-player :options="playerOptions"></video-player>
+    </el-dialog>
   </div>
 </template>
 
@@ -82,6 +86,8 @@ export default {
           multiHiddenElements: [], // 多选隐藏构件列表
           multiTranslucentElements: [], // 多选半透明构件列表
           multiIsolateElements: [], // 多选隔离列表
+          playerOptions: {}, // 视频播放选项
+          showVideo: false, // 是否显示视频
       }
   },
   created () {
@@ -98,12 +104,46 @@ export default {
   methods: {
         // navbar点击处理
         handleMenuSelect (key, keyPath) {
+            var self = this;
             if(keyPath[0] === '2'){ // 加载模型
                 var modelId = key;
                 this.loadModel(modelId);
                 return;
             }
-            if(key === '5') { // 登出
+            if(key === '5') { // 查看视频
+                if (this.selection === null) { // 未选中构件
+                    this.$alert('请选择想要查看的摄像头', '查看视频错误', {
+                        confirmButtonText: '我知道了'
+                    });
+                }else{ // 尝试从服务器获取视频播放选项
+                    var modelId = this.model.modelId;
+                    var objectId = this.selection.objectId;
+                    console.log(modelId, objectId);
+                    axios.get('/api/video', {
+                        params: {
+                            'modelId': modelId,
+                            'objectId': objectId
+                        }
+                    }).then(function(response){
+                        var options = response.data.data;
+                        if(!options.sources) {
+                            self.$alert('请选择想要查看的摄像头', '查看视频错误', {
+                                confirmButtonText: '我知道了'
+                            });
+                        }else{
+                            self.showVideo = true;
+                            self.playerOptions = options;
+                        }
+                    }).catch(function(err){
+                        console.log(err);
+                        self.$alert('服务器错误', '查看视频错误', {
+                            confirmButtonText: '我知道了'
+                        });
+                    });
+                }
+                return;
+            }
+            if(key === '6') { // 登出
                 this.logout();
                 return;
             }
@@ -456,6 +496,12 @@ export default {
                 this.viewer.setSelectedComponentsById([]);
                 this.viewer.render();
             }
+        },
+        // 关闭视频窗口
+        closeVideo () {
+            console.log('close video');
+            this.showVideo = false;
+            this.playerOptions = {};
         }
     }
 };

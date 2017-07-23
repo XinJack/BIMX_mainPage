@@ -117,6 +117,19 @@ app.get('/logout', function(req, res){
   })
 });
 
+app.get('/api/video', function(req, res){
+  var modelId = req.query.modelId;
+  var objectId = req.query.objectId;
+  axios.get('http://localhost:5000/api/video?modelId='+modelId+'&objectId='+objectId)
+    .then((response) => {
+      console.log(response.data);
+      res.json(response.data);
+    }).catch((err) => {
+      console.log(err);
+      res.json({});
+  })
+})
+
 var devMiddleware = require('webpack-dev-middleware')(compiler, {
   publicPath: webpackConfig.output.publicPath,
   quiet: true
