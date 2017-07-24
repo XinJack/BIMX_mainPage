@@ -79,6 +79,7 @@ export default {
           app: null, // 当前应用对象
           viewer: null, // viewer对象
           selection: null, // 当前选中构件
+          selectionPropertyData: null, // 当前选中构件的属性
           hiddenElements: [], // 隐藏的构件列表
           translucentElements: [], //半透明的构件列表
           selectionMode: 'singleSelection', // 选择类型
@@ -118,7 +119,13 @@ export default {
                 }else{ // 尝试从服务器获取视频播放选项
                     var modelId = this.model.modelId;
                     var objectId = this.selection.objectId;
-                    alert(modelId.toString() + ' -- ' + objectId.toString());
+                    if(!/(摄像头|camera)/i.test(this.selectionPropertyData.name)){
+                        self.$message({
+                            message:'当前选择不是摄像头！',
+                            type: 'warning'
+                        });
+                        return;
+                    }
                     axios.get('/api/video', {
                         params: {
                             'modelId': modelId,
@@ -273,8 +280,9 @@ export default {
                 BimfaceSDKLoader.load(bimfaceLoaderConfig, this.onSDKLoadSucceeded, this.onSDKLoadFailed);
             }).catch((err) => {
                 console.log(err);
-                this.$alert('无法获取viweToken', '加载模型失败', {
-                    confirmButtonText: '我知道了'
+                this.$message({
+                    message: '加载模型失败: 无法获取viweToken',
+                    type: 'error'
                 });
             })
         },
@@ -287,8 +295,8 @@ export default {
 
             var dataManagerConfig = new Glodon.Bimface.Data.MetaDataManagerConfig();
             dataManagerConfig.viewToken = viewMetaData.viewToken;
-            dataManagerConfig.viewToken = viewMetaData.modelId;
-            dataManagerConfig.viewToken = viewMetaData.modelType;
+            dataManagerConfig.modelId = this.model.modelId;
+            dataManagerConfig.modelType = this.model.modelType === 'normal'? 'singleModel': 'integrateModel';
             this.dataManager = new Glodon.Bimface.Data.MetaDataManager(dataManagerConfig);
 
             var appEvents = Glodon.Bimface.Application.WebApplication3DEvent;
@@ -314,6 +322,11 @@ export default {
                     }
                     return;
                 }
+
+                // // 获取构件属性并保存下来
+                this.dataManager.getComponentProperty(data.objectId, (propertyData) => {
+                    this.selectionPropertyData = propertyData;
+                });
 
                 this.showAttributePane(propertyButton, attributePane);
 
