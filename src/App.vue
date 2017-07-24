@@ -112,13 +112,13 @@ export default {
             }
             if(key === '5') { // 查看视频
                 if (this.selection === null) { // 未选中构件
-                    this.$alert('请选择想要查看的摄像头', '查看视频错误', {
-                        confirmButtonText: '我知道了'
+                    this.$message({
+                        message:'请选择想要查看视频的摄像头'
                     });
                 }else{ // 尝试从服务器获取视频播放选项
                     var modelId = this.model.modelId;
                     var objectId = this.selection.objectId;
-                    console.log(modelId, objectId);
+                    alert(modelId.toString() + ' -- ' + objectId.toString());
                     axios.get('/api/video', {
                         params: {
                             'modelId': modelId,
@@ -127,8 +127,8 @@ export default {
                     }).then(function(response){
                         var options = response.data.data;
                         if(!options.sources) {
-                            self.$alert('请选择想要查看的摄像头', '查看视频错误', {
-                                confirmButtonText: '我知道了'
+                            self.$message({
+                                message:'请选择想要查看视频的摄像头'
                             });
                         }else{
                             self.showVideo = true;
@@ -136,8 +136,8 @@ export default {
                         }
                     }).catch(function(err){
                         console.log(err);
-                        self.$alert('服务器错误', '查看视频错误', {
-                            confirmButtonText: '我知道了'
+                        self.$message({
+                            message:'服务器错误，请稍后再试'
                         });
                     });
                 }
@@ -511,6 +511,8 @@ export default {
 body
   padding: 0
   margin: 0
+  .el-message
+    margin-top: 80px
 #app
   #navbar
     margin: 0px
@@ -526,4 +528,6 @@ body
     right: 0px
     top: 60px
     bottom: 0px
+    .gld-bf-information
+        display: none
 </style>

@@ -30,6 +30,7 @@ app.get('/api/models', function(req, res){
     'data': [{'modelName': '\u5730\u4e0b\u5ba4\u7ba1\u7ebf\u7efc\u5408', 'modelId': '1058899859071168', 'modelType': 'normal', 'allow': 'admin'},
               {'modelName': '建筑结构地下及一层暖通机电给排水', 'modelId': '1059027381158112', 'modelType': 'integrate', 'allow': 'admin'},
               {'modelName': '一层水暖电', 'modelId': '1115535906611424', 'modelType': 'integrate', 'allow': 'admin'},
+              {'modelName': '教学楼带摄像头', 'modelId': '1139553661640896', 'modelType': 'normal', 'allow': 'admin'},
               {'modelName': '中德节能示范综合模型', 'modelId': '1059197793870048', 'modelType': 'integrate', 'allow': 'guest'},
               {'modelName': '中德电气', 'modelId': '1059175054753984', 'modelType': 'normal', 'allow': 'guest'},
               {'modelName': '中德钢结构模型', 'modelId': '1059175170793664', 'modelType': 'normal', 'allow': 'guest'},
