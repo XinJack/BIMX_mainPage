@@ -56,7 +56,11 @@
             <el-menu-item index="4-10">清除当前选择集</el-menu-item>
           </el-menu-item-group>
         </el-submenu>
-        <el-menu-item index="5">查看视频</el-menu-item>
+        <el-submenu index="5">
+            <template slot="title">数据查看</template>
+            <el-menu-item index="5-1">查看视频</el-menu-item>
+            <el-menu-item index="5-2">查看温度曲线</el-menu-item>
+        </el-submenu>
         <el-menu-item index="6" class="logout">退出登录</el-menu-item>
       </el-menu>
     </div>
@@ -109,45 +113,6 @@ export default {
             if(keyPath[0] === '2'){ // 加载模型
                 var modelId = key;
                 this.loadModel(modelId);
-                return;
-            }
-            if(key === '5') { // 查看视频
-                if (this.selection === null) { // 未选中构件
-                    this.$message({
-                        message:'请选择想要查看视频的摄像头'
-                    });
-                }else{ // 尝试从服务器获取视频播放选项
-                    var modelId = this.model.modelId;
-                    var objectId = this.selection.objectId;
-                    if(!/(摄像头|camera)/i.test(this.selectionPropertyData.name)){
-                        self.$message({
-                            message:'当前选择不是摄像头！',
-                            type: 'warning'
-                        });
-                        return;
-                    }
-                    axios.get('/api/video', {
-                        params: {
-                            'modelId': modelId,
-                            'objectId': objectId
-                        }
-                    }).then(function(response){
-                        var options = response.data.data;
-                        if(!options.sources) {
-                            self.$message({
-                                message:'请选择想要查看视频的摄像头'
-                            });
-                        }else{
-                            self.showVideo = true;
-                            self.playerOptions = options;
-                        }
-                    }).catch(function(err){
-                        console.log(err);
-                        self.$message({
-                            message:'服务器错误，请稍后再试'
-                        });
-                    });
-                }
                 return;
             }
             if(key === '6') { // 登出
@@ -235,6 +200,11 @@ export default {
                   this.multiSelections = [];
                   this.clearSelections();
                   break;
+                case '5-1':
+                    this.playVideo();
+                    break;
+                case '5-1':
+
             }
         },
         // 退出登录
@@ -508,6 +478,46 @@ export default {
             if(this.viewer){
                 this.viewer.setSelectedComponentsById([]);
                 this.viewer.render();
+            }
+        },
+        // 播放视频
+        playVideo () {
+            var self = this;
+            if (this.selection === null) { // 未选中构件
+                this.$message({
+                    message:'请选择想要查看视频的摄像头'
+                });
+            }else{ // 尝试从服务器获取视频播放选项
+                var modelId = this.model.modelId;
+                var objectId = this.selection.objectId;
+                if(!/(摄像头|camera)/i.test(this.selectionPropertyData.name)){
+                    self.$message({
+                        message:'当前选择不是摄像头！',
+                        type: 'warning'
+                    });
+                    return;
+                }
+                axios.get('/api/video', {
+                    params: {
+                        'modelId': modelId,
+                        'objectId': objectId
+                    }
+                }).then(function(response){
+                    var options = response.data.data;
+                    if(!options.sources) {
+                        self.$message({
+                            message:'请选择想要查看视频的摄像头'
+                        });
+                    }else{
+                        self.showVideo = true;
+                        self.playerOptions = options;
+                    }
+                }).catch(function(err){
+                    console.log(err);
+                    self.$message({
+                         message:'服务器错误，请稍后再试'
+                    });
+                });
             }
         },
         // 关闭视频窗口
