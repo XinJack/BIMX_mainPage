@@ -65,8 +65,9 @@
       </el-menu>
     </div>
     <div id="bimx" ref="bimx"></div>
-    <el-dialog :visible.sync="showVideo" title="现场视频" size="large" :before-close='closeVideo'>
-        <video-player :options="playerOptions"></video-player>
+    <el-dialog :visible.sync="showDialog" :title="dialogTitle" size="large" :before-close='closeDialog'>
+        <video-player :options="playerOptions" v-if="playerOptions.sources"></video-player>
+        <div id="echartContainer" v-if="!playerOptions.sources"></div>
     </el-dialog>
   </div>
 </template>
@@ -74,6 +75,7 @@
 <script>
 import axios from 'axios';
 import _ from 'lodash';
+import echarts from 'echarts';
 
 export default {
   data (){
@@ -92,7 +94,9 @@ export default {
           multiTranslucentElements: [], // 多选半透明构件列表
           multiIsolateElements: [], // 多选隔离列表
           playerOptions: {}, // 视频播放选项
-          showVideo: false, // 是否显示视频
+          showDialog: false, // 是否显示对话框（用于显示视频，曲线等）
+          dialogTitle: '', // 对话框标题
+          chart: {}, // 图表对象
       }
   },
   created () {
@@ -203,8 +207,9 @@ export default {
                 case '5-1':
                     this.playVideo();
                     break;
-                case '5-1':
-
+                case '5-2':
+                    this.showTemperatureChart();
+                    break;
             }
         },
         // 退出登录
@@ -509,7 +514,8 @@ export default {
                             message:'请选择想要查看视频的摄像头'
                         });
                     }else{
-                        self.showVideo = true;
+                        self.showDialog = true;
+                        self.dialogTitle = '现场视频';
                         self.playerOptions = options;
                     }
                 }).catch(function(err){
@@ -520,11 +526,51 @@ export default {
                 });
             }
         },
-        // 关闭视频窗口
-        closeVideo () {
-            console.log('close video');
-            this.showVideo = false;
+        //显示温度曲线
+        showTemperatureChart () {
+            if (this.selection === null) { // 未选中构件
+                this.$message({
+                    message:'请选择想要查看温度曲线的温度传感器'
+                });
+            }else{
+                var modelId = this.model.modelId;
+                var objectId = this.selection.objectId;
+                axios.get('/api/data', {
+                    params: {
+                        'modelId': modelId,
+                        'objectId': objectId,
+                        'type': 'temperature'
+                    }
+                }).then((response) => {
+                    var option = response.data.data;
+                    if(!option.series){
+                        this.$message({
+                            message: '请选择温度传感器',
+                            type: 'warning'
+                        });
+                    }else{
+                        this.showDialog = true;
+                        this.dialogTitle = '温度传感器数据';
+                        this.$nextTick(() => { // 保证echarts绘图的dom存在
+                            this.chart = echarts.init(document.getElementById('echartContainer'));
+                            this.chart.setOption(option);
+                        });
+                    }
+                }).catch((err) => {
+                    console.log(err);
+                    self.$message({
+                         message:'服务器错误，请稍后再试'
+                    });
+                });
+            }
+        },
+        // 关闭对话框窗口
+        closeDialog () {
+            console.log('close dialog');
+            this.showDialog = false;
+            this.dialogTitle = '';
             this.playerOptions = {};
+            this.chart.dispose();
         }
     }
 };
@@ -553,4 +599,8 @@ body
     bottom: 0px
     .gld-bf-information
         display: none
+  #echartContainer
+    margin: 20px auto
+    width: 600px
+    height: 600px
 </style>

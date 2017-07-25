@@ -129,7 +129,21 @@ app.get('/api/video', function(req, res){
       console.log(err);
       res.json({});
   })
-})
+});
+
+app.get('/api/data', function(req, res){
+  var modelId = req.query.modelId;
+  var objectId = req.query.objectId;
+  var type = req.query.type;
+  axios.get('http://localhost:5000/api/data?modelId='+modelId+'&objectId='+objectId+'&type='+type)
+    .then((response) => {
+      console.log(response.data);
+      res.json(response.data);
+    }).catch((err) => {
+      console.log(err);
+      res.json({});
+    });
+});
 
 var devMiddleware = require('webpack-dev-middleware')(compiler, {
   publicPath: webpackConfig.output.publicPath,
