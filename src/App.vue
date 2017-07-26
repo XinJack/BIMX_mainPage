@@ -288,9 +288,10 @@ export default {
                 var attributePane = document.getElementsByClassName('bf-panel')[0];
                 if(data === null){ // 未选中构件
                     this.selection = null;
-                    if(attributePane !== undefined) {
-                        attributePane.style.display = 'none';
-                    }
+                    // if(attributePane !== undefined) {
+                    //     attributePane.style.display = 'none';
+                    // }
+                    this.hideAttributePane(attributePane);
                     if(this.selectionMode === 'multiSelection'){ // 保证未选中构件时之前选中的构件也不会消失
                         this.viewer.addSelectedComponentsById(this.multiSelections);
                         this.viewer.render();
@@ -313,7 +314,7 @@ export default {
                         this.multiSelections.push(data.objectId);
                     }else{ // 构件已经选中过
                         this.multiSelections.splice(index, 1);
-                        this.hideAttributePane(document.getElementsByClassName('bf-panel')[0]);
+                        this.hideAttributePane(attributePane);
                     }
                     this.viewer.setSelectedComponentsById(this.multiSelections);
                     this.viewer.render();
@@ -468,6 +469,10 @@ export default {
                 return;
             }
             attributePane.style.display = 'none';
+            // 确保工具栏中的属性按钮关闭
+            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
+            var classes = propertyButton.className.split(' ');
+            propertyButton.className = _.join(_.difference(classes, ['bf-checked']), ' ');
         },
         // 显示属性窗口
         showAttributePane(propertyButton, attributePane) {
@@ -476,6 +481,10 @@ export default {
             }else{
                 attributePane.style.display = 'block';
             }
+            // 确保工具栏中的属性按钮打开
+            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
+            var classes = propertyButton.className.split(' ');
+            propertyButton.className = _.join(_.union(classes, ['bf-checked']), ' ');
         },
         // 清除当前选择集
         clearSelections () {
