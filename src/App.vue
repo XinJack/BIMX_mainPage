@@ -324,6 +324,7 @@ export default {
             // 属性按钮点击事件
             var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
             propertyButton.addEventListener('click', (e) => {
+                // 保证没有构件被选择的时候属性面板是空的，不显示任何数据
                 if(propertyButton.className.indexOf('bf-checked') > 0 && this.selection === null){
                     var propertyPaneContainer = document.querySelector('#bimx > div > div.bf-panel.bf-has-title.bf-sizable > div.bf-cantainer'); 
                     this.$nextTick(() => {
