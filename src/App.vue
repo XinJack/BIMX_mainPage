@@ -65,7 +65,7 @@
       </el-menu>
     </div>
     <div id="bimx" ref="bimx"></div>
-    <el-dialog :visible.sync="showDialog" :title="dialogTitle" size="large" :before-close='closeDialog'>
+    <el-dialog v-if="showDialog" :visible.sync="showDialog" :title="dialogTitle" size="large" :before-close='closeDialog'>
         <video-player :options="playerOptions" v-if="playerOptions.sources"></video-player>
         <div id="echartContainer" v-if="!playerOptions.sources"></div>
     </el-dialog>
@@ -283,7 +283,8 @@ export default {
 
             // 鼠标点击事件
             this.app.addEventListener(appEvents.ComponentsSelectionChanged, (data) => {
-                if(data === null){ // 未选中构件
+                if(!data.objectId){ // 未选中构件
+
                     this.selection = null;
 
                     this.hideAttributePane();
@@ -332,6 +333,10 @@ export default {
                     });
                 }
             });
+
+            // 去除广联达about按钮
+            var informationButton = document.getElementsByClassName('gld-bf-information')[0];
+            informationButton.parentNode.removeChild(informationButton);
         },
         onSDKLoadFailed (err) {
             console.log(err);
@@ -613,8 +618,6 @@ body
     right: 0px
     top: 60px
     bottom: 0px
-    .gld-bf-information
-        display: none
   #echartContainer
     margin: 20px auto
     width: 600px
