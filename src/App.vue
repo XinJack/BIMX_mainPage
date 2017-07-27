@@ -288,9 +288,7 @@ export default {
                 var attributePane = document.getElementsByClassName('bf-panel')[0];
                 if(data === null){ // 未选中构件
                     this.selection = null;
-                    // if(attributePane !== undefined) {
-                    //     attributePane.style.display = 'none';
-                    // }
+
                     this.hideAttributePane(attributePane);
                     if(this.selectionMode === 'multiSelection'){ // 保证未选中构件时之前选中的构件也不会消失
                         this.viewer.addSelectedComponentsById(this.multiSelections);
@@ -299,20 +297,25 @@ export default {
                     return;
                 }
 
-                // // 获取构件属性并保存下来
+                // 获取构件属性并保存下来
                 this.dataManager.getComponentProperty(data.objectId, (propertyData) => {
                     this.selectionPropertyData = propertyData;
                 });
 
+                // 显示属性面板
                 this.showAttributePane(propertyButton, attributePane);
 
+                // 处理单选和多选
                 if(this.selectionMode === 'singleSelection'){ // 单选
                     this.selection = data;
                 }else if(this.selectionMode === 'multiSelection'){ // 多选
+
                     var index = _.indexOf(this.multiSelections, data.objectId);
                     if(index < 0){ // 构件并未选中
+                        this.selection = data; // 在多选模式下该变量用来存储用户的当前选择
                         this.multiSelections.push(data.objectId);
-                    }else{ // 构件已经选中过
+                    }else{ // 构件已经选中过，取消对该构件的选择
+                        this.selection = null; // 清除当前选择
                         this.multiSelections.splice(index, 1);
                         this.hideAttributePane(attributePane);
                     }
@@ -488,6 +491,8 @@ export default {
         },
         // 清除当前选择集
         clearSelections () {
+            // 清除单选和多选数据
+            this.selection = null;
             this.multiSelections = [];
             if(this.viewer){
                 this.viewer.setSelectedComponentsById([]);
