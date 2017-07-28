@@ -305,12 +305,12 @@ export default {
 
                 // 处理单选和多选
                 if(this.selectionMode === 'singleSelection'){ // 单选
-                    this.selection = data;
+                    this.selection = data.objectId;
                 }else if(this.selectionMode === 'multiSelection'){ // 多选
 
                     var index = _.indexOf(this.multiSelections, data.objectId);
                     if(index < 0){ // 构件并未选中
-                        this.selection = data; // 在多选模式下该变量用来存储用户的当前选择
+                        this.selection = data.objectId; // 在多选模式下该变量用来存储用户的当前选择
                         this.multiSelections.push(data.objectId);
                     }else{ // 构件已经选中过，取消对该构件的选择
                         this.selection = null; // 清除当前选择
@@ -350,9 +350,8 @@ export default {
             if(this.selection === null){
                 return;
             }
-            var objectId = this.selection.objectId;
-            this.viewer.hideComponents([objectId]);
-            this.hiddenElements.push(objectId);
+            this.viewer.hideComponents([this.selection]);
+            this.hiddenElements.push(this.selection);
             this.clearSelections();
             this.hideAttributePane();
             this.viewer.render();
@@ -378,9 +377,8 @@ export default {
             if(this.selection === null){
               return;
             }
-            var objectId = this.selection.objectId;
-            this.viewer.setComponentsOpacity([objectId], 'Translucent');
-            this.translucentElements.push(objectId);
+            this.viewer.setComponentsOpacity([this.selection], 'Translucent');
+            this.translucentElements.push(this.selection);
             this.hideAttributePane();
             this.clearSelections();
             this.viewer.render();
@@ -406,8 +404,7 @@ export default {
             if(this.selection === null){
               return;
             }
-            var objectId = this.selection.objectId;
-            this.viewer.isolateComponentsById([objectId], 'MakeOthersTranslucent');
+            this.viewer.isolateComponentsById([this.selection], 'MakeOthersTranslucent');
             this.hideAttributePane();
             this.clearSelections();
             this.viewer.render();
@@ -458,11 +455,12 @@ export default {
         // 隔离多选构件
         isolateMultiSelection () {
             if(this.multiSelections.length > 0){
+                alert(this.multiSelections.toString());
                 this.multiSelections.forEach((objectId) => {
                   this.multiIsolateElements.push(objectId);
                 });
                 this.clearSelections();
-                this.viewer.isolateComponentsById(this.multiIsolateElements);
+                this.viewer.isolateComponentsById(this.multiIsolateElements, 'MakeOthersTranslucent');
                 this.hideAttributePane();
                 this.viewer.render();
             }
@@ -512,7 +510,7 @@ export default {
                 });
             }else{ // 尝试从服务器获取视频播放选项
                 var modelId = this.model.modelId;
-                var objectId = this.selection.objectId;
+                var objectId = this.selection;
                 if(!/(摄像头|camera)/i.test(this.selectionPropertyData.name)){
                     self.$message({
                         message:'当前选择不是摄像头！',
@@ -552,7 +550,7 @@ export default {
                 });
             }else{
                 var modelId = this.model.modelId;
-                var objectId = this.selection.objectId;
+                var objectId = this.selection;
                 axios.get('/api/data', {
                     params: {
                         'modelId': modelId,
