@@ -327,10 +327,7 @@ export default {
             propertyButton.addEventListener('click', (e) => {
                 // 保证没有构件被选择的时候属性面板是空的，不显示任何数据
                 if(propertyButton.className.indexOf('bf-checked') > 0 && this.selection === null){
-                    var propertyPaneContainer = document.querySelector('#bimx > div > div.bf-panel.bf-has-title.bf-sizable > div.bf-cantainer'); 
-                    this.$nextTick(() => {
-                        propertyPaneContainer.innerHTML = '';
-                    });
+                    this.app._panels.PropertyPanel.setData('');
                 }
             });
 
@@ -587,7 +584,6 @@ export default {
         },
         // 关闭对话框窗口
         closeDialog () {
-            console.log('close dialog');
             this.showDialog = false;
             this.dialogTitle = '';
             this.playerOptions = {};
