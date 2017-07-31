@@ -358,7 +358,11 @@ export default {
                         }
                     }
                     this.viewer.setSelectedComponentsById(this.multiSelections);
-                    this.viewer.highlightComponentsById([this.selection], 'Red', 'red');
+                    if (this.selection !== null) {
+                        this.viewer.highlightComponentsById([this.selection], 'Red', 'red');
+                    }else {
+                        this.viewer.highlightComponentsById(undefined, 'Red', 'red');
+                    }
                     this.viewer.render();
                 }
             });
@@ -498,7 +502,6 @@ export default {
         isolateMultiSelection () {
             this._addSelection();
             if(this.multiSelections.length > 0){
-                alert(this.multiSelections.toString());
                 this.multiSelections.forEach((objectId) => {
                   this.multiIsolateElements.push(objectId);
                 });
