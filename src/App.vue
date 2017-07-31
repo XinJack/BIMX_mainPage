@@ -69,6 +69,26 @@
         <video-player :options="playerOptions" v-if="playerOptions.sources"></video-player>
         <div id="echartContainer" v-if="!playerOptions.sources"></div>
     </el-dialog>
+    <div v-show="!attributePaneShown" @click="showAttributePane" class="bf-toolbar" style="position: absolute; right: 250px; top: 70px; z-index: 99;">
+        <div class="bf-button gld-bf-properties" title="属性"></div>
+    </div>
+    <div v-if="selectionPropertyData" v-show="attributePaneShown" class="bf-panel bf-has-title bf-sizable" title="属性" style="width: 300px; height: 600px; min-width: 200px; min-height: 200px; right: 10px; top: 70px;">
+        <div class="bf-close" @click="hideAttributePane"></div>
+        <div class="bf-title" style="cursor: move; user-select: none;">属性</div>
+        <div class="bf-cantainer">
+            <table class="bf-table">
+                <tbody v-for="property in selectionPropertyData.properties" class="bf-group">
+                    <tr class="bf-group-title">
+                        <td colspan="2"><i class="bf-icon" @click="toggleProperty"></i>{{property.group}}</td>
+                    </tr>
+                    <tr v-for="item in property.items" class="bf-group-content">
+                        <td class="bf-key">{{item.key}}</td>
+                        <td class="bf-value">{{item.unit === null? item.value: item.value + ' ' + item.unit}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -97,6 +117,8 @@ export default {
           showDialog: false, // 是否显示对话框（用于显示视频，曲线等）
           dialogTitle: '', // 对话框标题
           chart: {}, // 图表对象
+          collapseProperty: false, // 是否折叠属性表
+          attributePaneShown: true, // 用于控制属性表的显示和隐藏
       }
   },
   created () {
@@ -109,6 +131,17 @@ export default {
               this.loadModel(this.models[0].modelId);
           }
       });
+  },
+  watch: {
+    selection (newVal, oldVal) { // 监听选中的构件，如果发生变化，属性表的内容也相应的改变
+        if(newVal !== null) {
+            this.dataManager.getComponentProperty(newVal, (propertyData) => {
+                this.selectionPropertyData = propertyData;
+            });
+        }else {
+            this.selectionPropertyData = {};
+        }
+    }
   },
   methods: {
         // navbar点击处理
@@ -201,7 +234,6 @@ export default {
                   break;
                 case '4-10':
                   this.hideAttributePane();
-                  this.multiSelections = [];
                   this.clearSelections();
                   break;
                 case '5-1':
@@ -285,20 +317,19 @@ export default {
             this.app.addEventListener(appEvents.ComponentsSelectionChanged, (data) => {
                 if(!data.objectId){ // 未选中构件
 
-                    this.selection = null;
-
-                    this.hideAttributePane();
                     if(this.selectionMode === 'multiSelection'){ // 保证未选中构件时之前选中的构件也不会消失
-                        this.viewer.addSelectedComponentsById(this.multiSelections);
-                        this.viewer.render();
+                        if(this.selection !== null) {
+                            this.multiSelections.push(this.selection);
+                        }
                     }
+
+                    this.selection = null;
+                    this.viewer.highlightComponentsById(undefined, 'Red', 'red');
+                    this.viewer.addSelectedComponentsById(this.multiSelections);
+                    this.hideAttributePane();
+                    this.viewer.render();
                     return;
                 }
-
-                // 获取构件属性并保存下来
-                this.dataManager.getComponentProperty(data.objectId, (propertyData) => {
-                    this.selectionPropertyData = propertyData;
-                });
 
                 // 显示属性面板
                 this.showAttributePane();
@@ -309,31 +340,35 @@ export default {
                 }else if(this.selectionMode === 'multiSelection'){ // 多选
 
                     var index = _.indexOf(this.multiSelections, data.objectId);
-                    if(index < 0){ // 构件并未选中
-                        this.selection = data.objectId; // 在多选模式下该变量用来存储用户的当前选择
-                        this.multiSelections.push(data.objectId);
-                    }else{ // 构件已经选中过，取消对该构件的选择
-                        this.selection = null; // 清除当前选择
-                        this.multiSelections.splice(index, 1);
-                        this.hideAttributePane();
+                    if(index === -1 && this.selection !== data.objectId) { // 当前选中的构件之前并未选中过
+                        if(this.selection !== null) {
+                            this.multiSelections.push(this.selection);
+                        }
+                        this.selection = data.objectId
+                    } else if(index >= 0) { // 当前选中的构件是很久之前选中过的
+                        this.multiSelections.splice(index, 1); // 除去该构件
+                        if(this.selection === null && this.multiSelections.length > 0) {
+                            this.selection = this.multiSelections.splice(this.multiSelections.length - 1, 1)[0];
+                        }
+                    } else if(this.selection === data.objectId) { // 当前选中的构件是上一次选中的
+                        if(this.multiSelections.length > 0) {
+                            this.selection = this.multiSelections.splice(this.multiSelections.length - 1, 1)[0];
+                        } else {
+                            this.selection = null;
+                        }
                     }
                     this.viewer.setSelectedComponentsById(this.multiSelections);
+                    this.viewer.highlightComponentsById([this.selection], 'Red', 'red');
                     this.viewer.render();
-                }
-            });
-
-            // 属性按钮点击事件
-            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
-            propertyButton.addEventListener('click', (e) => {
-                // 保证没有构件被选择的时候属性面板是空的，不显示任何数据
-                if(propertyButton.className.indexOf('bf-checked') > 0 && this.selection === null){
-                    this.app._panels.PropertyPanel.setData('');
                 }
             });
 
             // 去除广联达about按钮
             var informationButton = document.getElementsByClassName('gld-bf-information')[0];
             informationButton.parentNode.removeChild(informationButton);
+            // 去除广联达properties按钮
+            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
+            propertyButton.parentNode.removeChild(propertyButton);
         },
         onSDKLoadFailed (err) {
             console.log(err);
@@ -414,15 +449,21 @@ export default {
             this.viewer.clearIsolation();
             this.viewer.render();
         },
+        _addSelection () { // 在多选状态下将当前选择加入到所有选择集中
+            if(this.selection !== null) {
+                this.multiSelections.push(this.selection);
+                this.selection = null;
+            }
+        },
         // 隐藏多选构件
         hideMultiSelection () {
+            this._addSelection();
             if(this.multiSelections.length >= 0){
                 this.multiSelections.forEach((objectId) => {
                     this.multiHiddenElements.push(objectId);
                 });
                 this.clearSelections();
                 this.viewer.hideComponents(this.multiHiddenElements);
-                this.hideAttributePane();
                 this.viewer.render();
             }
         },
@@ -435,6 +476,7 @@ export default {
         },
         // 半透明多选构件
         translucentMultiSelection () {
+            this._addSelection();
             if(this.multiSelections.length >= 0){
                 this.multiSelections.forEach((objectId) => {
                   this.multiTranslucentElements.push(objectId);
@@ -454,6 +496,7 @@ export default {
         },
         // 隔离多选构件
         isolateMultiSelection () {
+            this._addSelection();
             if(this.multiSelections.length > 0){
                 alert(this.multiSelections.toString());
                 this.multiSelections.forEach((objectId) => {
@@ -474,17 +517,11 @@ export default {
         },
         // 隐藏属性窗口
         hideAttributePane () {
-            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
-            if(propertyButton.className.indexOf('bf-checked') > 0) {
-                propertyButton.click();
-            }
+            this.attributePaneShown = false;
         },
         // 显示属性窗口
         showAttributePane() {
-            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
-            if(propertyButton.className.indexOf('bf-checked') === -1){
-                propertyButton.click();
-            }
+            this.attributePaneShown = true;
         },
         // 清除当前选择集
         clearSelections () {
@@ -492,13 +529,10 @@ export default {
             this.selection = null;
             this.multiSelections = [];
             if(this.viewer){
+                // 要清除高亮，将ids设置为undefined即可
+                this.viewer.highlightComponentsById(undefined, 'Red', 'red');
                 this.viewer.setSelectedComponentsById([]);
                 this.viewer.render();
-            }
-            // 保证属性按钮和属性面板不显示
-            var propertyButton = document.getElementsByClassName('gld-bf-properties')[0];
-            if(propertyButton.className.indexOf('bf-checked') > 0) {
-                propertyButton.click();
             }
         },
         // 播放视频
@@ -586,6 +620,17 @@ export default {
             this.dialogTitle = '';
             this.playerOptions = {};
             this.chart.dispose();
+        },
+        // 切换属性表的属性折叠状态
+        toggleProperty (e) {
+            // 获取该i标签所在的tbody节点
+            var tbodyNode = e.target.parentNode.parentNode.parentNode;
+            // 切换tbody节点的class
+            if(tbodyNode.className.indexOf('bf-collapse') >= 0){
+                tbodyNode.className = 'bf-group';
+            }else {
+                tbodyNode.className = 'bf-group bf-collapse';
+            }
         }
     }
 };
