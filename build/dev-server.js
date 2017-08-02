@@ -27,17 +27,17 @@ var axios = require('axios')
 app.get('/api/models', function(req, res){
   res.json({ 'code': 'success',
     // 地下室管线综合
-    'data': [{'modelName': '\u5730\u4e0b\u5ba4\u7ba1\u7ebf\u7efc\u5408', 'modelId': '1058899859071168', 'modelType': 'normal', 'allow': 'admin'},
-              {'modelName': '建筑结构地下及一层暖通机电给排水', 'modelId': '1059027381158112', 'modelType': 'integrate', 'allow': 'admin'},
-              {'modelName': '一层水暖电', 'modelId': '1115535906611424', 'modelType': 'integrate', 'allow': 'admin'},
+    'data': [{'modelName': '\u5730\u4e0b\u5ba4\u7ba1\u7ebf\u7efc\u5408', 'modelId': '1145397448384704', 'modelType': 'normal', 'allow': 'admin'},
+              {'modelName': '青岛奥体中心', 'modelId': '1145408766607552', 'modelType': 'normal', 'allow': 'admin'},
+              {'modelName': '一层水暖电', 'modelId': '1145419700183264', 'modelType': 'integrate', 'allow': 'admin'},
               {'modelName': '教学楼带摄像头', 'modelId': '1139553661640896', 'modelType': 'normal', 'allow': 'admin'},
-              {'modelName': '中德节能示范综合模型', 'modelId': '1059197793870048', 'modelType': 'integrate', 'allow': 'guest'},
-              {'modelName': '中德电气', 'modelId': '1059175054753984', 'modelType': 'normal', 'allow': 'guest'},
-              {'modelName': '中德钢结构模型', 'modelId': '1059175170793664', 'modelType': 'normal', 'allow': 'guest'},
-              {'modelName': '中德混凝土模型', 'modelId': '1059175897030848', 'modelType': 'normal', 'allow': 'guest'},
-              {'modelName': '中德给排水', 'modelId': '1059175526293696', 'modelType': 'normal', 'allow': 'guest'},
-              {'modelName': '中德建筑', 'modelId': '1059176083685568', 'modelType': 'normal', 'allow': 'guest'},
-              {'modelName': '中德暖通', 'modelId': '1059176495702208', 'modelType': 'normal', 'allow': 'guest'}
+              {'modelName': '中德节能示范综合模型', 'modelId': '1145391997272288', 'modelType': 'integrate', 'allow': 'guest'},
+              {'modelName': '中德电气', 'modelId': '1145378607915200', 'modelType': 'normal', 'allow': 'guest'},
+              {'modelName': '中德钢结构模型', 'modelId': '1145378691735744', 'modelType': 'normal', 'allow': 'guest'},
+              {'modelName': '中德混凝土模型', 'modelId': '1145379277955264', 'modelType': 'normal', 'allow': 'guest'},
+              {'modelName': '中德给排水', 'modelId': '1145378983043264', 'modelType': 'normal', 'allow': 'guest'},
+              {'modelName': '中德建筑', 'modelId': '1145379400925376', 'modelType': 'normal', 'allow': 'guest'},
+              {'modelName': '中德暖通', 'modelId': '1145379728531648', 'modelType': 'normal', 'allow': 'guest'}
   ]
   });
 });

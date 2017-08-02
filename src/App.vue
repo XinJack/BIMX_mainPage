@@ -137,9 +137,11 @@ export default {
         if(newVal !== null) {
             this.dataManager.getComponentProperty(newVal, (propertyData) => {
                 this.selectionPropertyData = propertyData;
+                this.attributePaneShown = true;
             });
         }else {
             this.selectionPropertyData = {};
+            this.attributePaneShown = false;
         }
     }
   },
@@ -230,7 +232,11 @@ export default {
                   this.showIsolateMultiSelection();
                   break;
                 case '4-9':
+                  this._addSelection();
+                  this.viewer.highlightComponentsById(undefined, 'Red', 'red');
+                  this.viewer.setSelectedComponentsById(this.multiSelections);
                   this.zoomToSelectedComponents();
+                  this.viewer.render();
                   break;
                 case '4-10':
                   this.hideAttributePane();
@@ -310,29 +316,25 @@ export default {
 
             // 视图加载完毕后事件
             this.app.addEventListener(appEvents.ViewAdded, () => {
+                this.viewer.setView('Home'); // 加载完模型后设置视图为Home视图
                 this.viewer.render();
             });
 
             // 鼠标点击事件
             this.app.addEventListener(appEvents.ComponentsSelectionChanged, (data) => {
                 if(!data.objectId){ // 未选中构件
-
+                    // 多选
                     if(this.selectionMode === 'multiSelection'){ // 保证未选中构件时之前选中的构件也不会消失
-                        if(this.selection !== null) {
+                        if(this.selection !== null) { // 上一选择不为空
                             this.multiSelections.push(this.selection);
                         }
+                        this.viewer.highlightComponentsById(undefined, 'Red', 'red');
+                        this.viewer.setSelectedComponentsById(this.multiSelections);
                     }
-
-                    this.selection = null;
-                    this.viewer.highlightComponentsById(undefined, 'Red', 'red');
-                    this.viewer.addSelectedComponentsById(this.multiSelections);
-                    this.hideAttributePane();
+                    this.selection = null; // 将当前选择设置为空
                     this.viewer.render();
                     return;
                 }
-
-                // 显示属性面板
-                this.showAttributePane();
 
                 // 处理单选和多选
                 if(this.selectionMode === 'singleSelection'){ // 单选
@@ -340,29 +342,39 @@ export default {
                 }else if(this.selectionMode === 'multiSelection'){ // 多选
 
                     var index = _.indexOf(this.multiSelections, data.objectId);
-                    if(index === -1 && this.selection !== data.objectId) { // 当前选中的构件之前并未选中过
-                        if(this.selection !== null) {
+                    if(this.selection === null) { // 上一选择为空
+                        if(index === -1) { // 选中新构件
+                            this.selection = data.objectId;
+                        } else { // 选中之前选中的构件
+                            this.multiSelections.splice(index, 1);
+                            if(this.multiSelections.length > 0) {
+                                this.selection = this.multiSelections.splice(this.multiSelections.length - 1, 1)[0];
+                            }
+                        }
+                    }else { // 上一选择不为空
+                        // 选中新构件
+                        if(index === -1 && this.selection !== data.objectId) {
                             this.multiSelections.push(this.selection);
-                        }
-                        this.selection = data.objectId
-                    } else if(index >= 0) { // 当前选中的构件是很久之前选中过的
-                        this.multiSelections.splice(index, 1); // 除去该构件
-                        if(this.selection === null && this.multiSelections.length > 0) {
-                            this.selection = this.multiSelections.splice(this.multiSelections.length - 1, 1)[0];
-                        }
-                    } else if(this.selection === data.objectId) { // 当前选中的构件是上一次选中的
-                        if(this.multiSelections.length > 0) {
-                            this.selection = this.multiSelections.splice(this.multiSelections.length - 1, 1)[0];
-                        } else {
-                            this.selection = null;
+                            this.selection = data.objectId;
+                        }else if(index !== -1) { // 选中很久之前选中的构件
+                            this.multiSelections.splice(index, 1);
+                        }else if(this.selection === data.objectId) { // 选中上一次选中的构件
+                            console.log('last select');
+                            if(this.multiSelections.length > 0) {
+                                this.selection = this.multiSelections.splice(this.multiSelections.length - 1, 1)[0];
+                            }else {
+                                this.selection = null;
+                            }
                         }
                     }
-                    this.viewer.setSelectedComponentsById(this.multiSelections);
+                    // 这里并不是重复代码，很重要，保证之前高亮的构件会先清除，不然会出现多个构件高亮的bug
+                    this.viewer.highlightComponentsById(undefined, 'Red', 'red');
                     if (this.selection !== null) {
                         this.viewer.highlightComponentsById([this.selection], 'Red', 'red');
                     }else {
                         this.viewer.highlightComponentsById(undefined, 'Red', 'red');
                     }
+                    this.viewer.setSelectedComponentsById(this.multiSelections);
                     this.viewer.render();
                 }
             });
@@ -622,7 +634,9 @@ export default {
             this.showDialog = false;
             this.dialogTitle = '';
             this.playerOptions = {};
-            this.chart.dispose();
+            if(this.chart.id) { // 确保关闭chart之前chart存在
+                this.chart.dispose();
+            }
         },
         // 切换属性表的属性折叠状态
         toggleProperty (e) {
