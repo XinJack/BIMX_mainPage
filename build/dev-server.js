@@ -23,6 +23,10 @@ var proxyTable = config.dev.proxyTable
 var app = express()
 var compiler = webpack(webpackConfig)
 var axios = require('axios')
+var bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/api/models', function(req, res){
   res.json({ 'code': 'success',
@@ -143,6 +147,41 @@ app.get('/api/data', function(req, res){
       console.log(err);
       res.json({});
     });
+});
+
+app.get('/api/bookmarks', function(req, res) {
+  var modelId = req.query.modelId;
+  axios.get('http://localhost:5000/api/bookmarks', {
+    params: {
+      modelId: modelId
+    }
+  }).then((response) => {
+    console.log(response.data);
+    res.json(response.data);
+  }).catch((err) => {
+    res.json({
+      'code': 'error',
+      'message': 'failed to get bookmarks'
+    });
+  });
+});
+
+app.put('/api/bookmarks', function(req, res) {
+  var modelId = req.body.modelId;
+  var bookmarks = req.body.bookmarks;
+  axios.put('http://localhost:5000/api/bookmarks', {
+    modelId: modelId,
+    bookmarks: bookmarks
+  }).then((response) => {
+    console.log(response.data);
+    res.json(response.data);
+  }).catch((err) => {
+    console.log(err);
+    res.json({
+      'code': 'error',
+      'message': 'failed to update bookmarks'
+    });
+  })
 });
 
 var devMiddleware = require('webpack-dev-middleware')(compiler, {

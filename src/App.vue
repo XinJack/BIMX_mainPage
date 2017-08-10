@@ -61,13 +61,26 @@
             <el-menu-item index="5-1">查看视频</el-menu-item>
             <el-menu-item index="5-2">查看温度曲线</el-menu-item>
         </el-submenu>
-        <el-menu-item index="6" class="logout">退出登录</el-menu-item>
+        <el-menu-item index="6">书签管理</el-menu-item>
+        <el-menu-item index="7" class="logout">退出登录</el-menu-item>
       </el-menu>
     </div>
     <div id="bimx" ref="bimx"></div>
     <el-dialog v-if="showDialog" :visible.sync="showDialog" :title="dialogTitle" size="large" :before-close='closeDialog'>
         <video-player :options="playerOptions" v-if="playerOptions.sources"></video-player>
-        <div id="echartContainer" v-if="!playerOptions.sources"></div>
+        <div id="echartContainer" v-if="!playerOptions.sources && !showBookmarks"></div>
+        <div v-if="showNewBookmark">
+          <el-form :inline="true">
+            <el-form-item label="书签名称">
+              <el-input :autofocus="true" placeholder="书签名称" v-model.trim="newBookmarkName"></el-input>
+            </el-form-item>
+          </el-form>
+        </div>
+        <div v-if="showBookmarks" slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="createNewBookmark" v-if="dialogTitle==='新建书签'">创建</el-button>
+          <el-button type="primary" @click="confirmEditBookmark" v-if="dialogTitle==='编辑书签'">确定</el-button>
+          <el-button type="danger" @click="closeNewBookmark">取消</el-button>
+        </div>
     </el-dialog>
     <div v-show="!attributePaneShown" @click="showAttributePane" class="bf-toolbar" style="position: absolute; right: 250px; top: 70px; z-index: 99;">
         <div class="bf-button gld-bf-properties" title="属性"></div>
@@ -89,6 +102,24 @@
             </table>
         </div>
     </div>
+    <el-card v-show="showBookmarks" id="bookmarks" class="box-card">
+      <div slot="header" class="clearfix">
+        <span style="line-height:36px;">{{model.modelName}} - 书签管理</span>
+        <div style="float:right;">
+          <el-button type="success" @click.native.prevent="createBookmark">新建</el-button>
+          <el-button type="primary" @click.native.prevent="saveBookmarks">保存</el-button>
+          <el-button type="danger" @click.native.prevent="closeBookmarks">关闭</el-button>
+        </div>
+      </div>
+      <div v-for="(bookmark, index) in bookmarks" style="margin:18px;">
+        <span>{{bookmark.bookmarkName}}</span>
+        <div style="float:right;">
+          <el-button type="success" size="small" @click.native.prevent="viewBookmark(index)">查看</el-button>
+          <el-button type="primary" size="small" @click.native.prevent="editBookmark(index)">编辑</el-button>
+          <el-button type="danger" size="small" @click.native.prevent="removeBookmark(index)">删除</el-button>
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
@@ -119,6 +150,11 @@ export default {
           chart: {}, // 图表对象
           collapseProperty: false, // 是否折叠属性表
           attributePaneShown: true, // 用于控制属性表的显示和隐藏
+          bookmarks: [], // 书签（与某个模型相对应）
+          newBookmarkName: '', // 新书签的名称
+          showBookmarks: false, // 用于控制书签页是否显示
+          showNewBookmark: false, // 用于控制创建新书签页表单是否显示
+          editBookmarkIndex: -1, // 记录编辑时书签的位置
       }
   },
   created () {
@@ -143,6 +179,21 @@ export default {
             this.selectionPropertyData = {};
             this.attributePaneShown = false;
         }
+    },
+    // 加载的模型发生改变时向后台请求新的书签数据（书签数据是与模型挂钩的）
+    model (newVal, oldVal) {
+      axios.get('/api/bookmarks', {
+        params: {
+          modelId: newVal.modelId
+        }
+      }).then((res) => {
+        res = res.data;
+        if(res.code === 'success') this.bookmarks = res.data;
+        else this.bookmarks = [];
+      }).catch((err) => {
+        console.log(err);
+        this.bookmarks = [];
+      });
     }
   },
   methods: {
@@ -154,7 +205,11 @@ export default {
                 this.loadModel(modelId);
                 return;
             }
-            if(key === '6') { // 登出
+            if(key === '6') { // 书签管理
+              this.showBookmarks = true;
+              return;
+            }
+            if(key === '7') { // 登出
                 this.logout();
                 return;
             }
@@ -270,6 +325,7 @@ export default {
             this.multiHiddenElements = [];
             this.multiTranslucentElements = [];
             this.multiIsolateElements = [];
+            this.showBookmarks = false;
         },
         // 加载模型
         loadModel (modelId) {
@@ -633,6 +689,8 @@ export default {
         closeDialog () {
             this.showDialog = false;
             this.dialogTitle = '';
+            this.showNewBookmark = false;
+            this.newBookmarkName = '';
             this.playerOptions = {};
             if(this.chart.id) { // 确保关闭chart之前chart存在
                 this.chart.dispose();
@@ -648,6 +706,100 @@ export default {
             }else {
                 tbodyNode.className = 'bf-group bf-collapse';
             }
+        },
+        // 新建书签
+        createBookmark () {
+          this.showDialog = true;
+          this.dialogTitle = "新建书签";
+          this.showNewBookmark = true;
+        },
+        // 关闭书签页
+        closeBookmarks () {
+          this.showBookmarks = false;
+        },
+        // 取消创建新书签 => 实际就是关闭
+        closeNewBookmark () {
+          this.showDialog = false;
+          this.showNewBookmark = false;
+          this.newBookmarkName = '';
+        },
+        // 创建新书签
+        createNewBookmark () {
+          if(this.newBookmarkName === ''){
+            this.$message({
+              type: 'warning',
+              message: '书签名称不能为空'
+            });
+          } else{
+            this.bookmarks.push({
+              bookmarkName: this.newBookmarkName,
+              cameraStatus: this.viewer.getCameraStatus()
+            });
+            this.closeNewBookmark();
+          }
+        },
+        // 确定编辑书签
+        confirmEditBookmark () {
+          if(this.newBookmarkName === ''){
+            this.$message({
+              type: 'warning',
+              message: '书签名称不能为空'
+            });
+          } else{
+            var bookmark = this.bookmarks[this.editBookmarkIndex];
+            this.bookmarks[this.editBookmarkIndex] = {
+              bookmarkName: this.newBookmarkName,
+              cameraStatus: bookmark.cameraStatus
+            };
+            this.closeNewBookmark();
+            this.editBookmarkIndex = -1;
+          }
+        },
+        // 查看某一书签
+        viewBookmark (index) {
+          var cameraStatus = this.bookmarks[index].cameraStatus;
+          this.viewer.setCameraStatus(cameraStatus);
+          this.showBookmarks = false;
+        },
+        // 编辑某一书签
+        editBookmark (index) {
+          var bookmark = this.bookmarks[index];
+          this.showDialog = true;
+          this.dialogTitle = '编辑书签';
+          this.showNewBookmark = true;
+          this.newBookmarkName = bookmark.bookmarkName;
+          this.editBookmarkIndex = index;
+        },
+        // 删除某一书签
+        removeBookmark (index) {
+          this.bookmarks.splice(index, 1);
+        }, 
+        // 保存书签
+        saveBookmarks () {
+          axios.put('/api/bookmarks', {
+            modelId: this.model.modelId,
+            bookmarks: this.bookmarks
+          }).then((res) => {
+            res = res.data;
+            if(res.code === 'success') {
+              this.$message({
+                type: 'success',
+                message: '保存书签成功'
+              });
+              this.closeBookmarks();
+            }else{
+              this.$message({
+                type: 'warning',
+                message: '同步书签失败，请稍后重试'
+              });
+            }
+          }).catch((err) => {
+            console.log(err);
+            this.$message({
+              type: 'warning',
+              message: '同步书签失败，请稍后重试'
+            });
+          })
         }
     }
 };
@@ -678,4 +830,13 @@ body
     margin: 20px auto
     width: 600px
     height: 600px
+  #bookmarks
+    position: absolute
+    left: 10px
+    top: 70px
+    width: 500px
+    z-index: 99
+    display: block
+    max-height: 500px
+    overflow-y: auto
 </style>
